@@ -79,11 +79,20 @@ export function ResultPage() {
         provinsi: "DKI Jakarta",
       }
 
+      // Normalize kategori_sampah to valid type
+      const validKategori = ["Organik", "Plastik", "Kertas", "Logam", "B3", "Residu"] as const
+      const kategoriNormalized = validKategori.includes(result.analysis.kategori_sampah as any)
+        ? (result.analysis.kategori_sampah as "Organik" | "Plastik" | "Kertas" | "Logam" | "B3" | "Residu")
+        : "Residu"
+
       // Save scan to Firestore
       const scanData: Omit<RiwayatScan, "scanId"> = {
         userId: user.uid,
         timestamp: new Date(),
-        hasilAnalisis: result.analysis,
+        hasilAnalisis: {
+          ...result.analysis,
+          kategori_sampah: kategoriNormalized,
+        },
         lokasi: lokasi,
         imageUrl: imageUrl,
         beratEstimasiKg: berat,
