@@ -100,3 +100,43 @@ export function MapPinIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   )
 }
+
+export function BottleIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path d="M10 2h4v2a2 2 0 0 1-2 2h-0a2 2 0 0 1-2-2V2z" />
+      <path d="M7 6h10l-1 12a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2L7 6z" />
+      <path d="M9 22h6" />
+    </svg>
+  )
+}
+
+export function CanIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <rect x="6" y="4" width="12" height="16" rx="2" />
+      <path d="M8 4v-1a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1V4" />
+      <path d="M9 9h6" />
+    </svg>
+  )
+}
+
+export function BoxIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path d="M21 16V8a2 2 0 0 0-1-1.73L13 2.27a2 2 0 0 0-2 0L4 6.27A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4.0a2 2 0 0 0 2 0l7-4.0A2 2 0 0 0 21 16z" />
+      <path d="M12 2v8" />
+    </svg>
+  )
+}
+
+export function PaperIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M8 13h8" />
+      <path d="M8 17h5" />
+    </svg>
+  )
+}

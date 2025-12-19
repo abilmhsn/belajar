@@ -121,8 +121,19 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789012
 NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789012:web:abcdef123456
 
-# Gemini AI API Key
+# Gemini AI API Key (SERVER ONLY)
+# IMPORTANT: The Gemini API key is a secret and MUST NOT be exposed to client-side code.
+# Do NOT prefix the key with NEXT_PUBLIC_ or EXPO_PUBLIC_.
+#
+# For local development, you may set this in your local environment file, but keep the
+# file out of version control (add to .gitignore). Prefer setting the key in your
+# server environment (e.g., Vercel Environment Variables) as `GEMINI_API_KEY`.
 GEMINI_API_KEY=AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+# If you accidentally committed a key to your repository or exposed it in a client
+# build (for example via EXPO_PUBLIC_* or NEXT_PUBLIC_*), rotate/revoke the key
+# immediately in the Google Cloud Console and create a new key restricted to
+# production usage.
 \`\`\`
 
 **PENTING**: Jangan commit file `.env.local` ke Git!

@@ -92,8 +92,12 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 
-# Gemini AI
+# Gemini AI (SERVER ONLY)
 GEMINI_API_KEY=your_gemini_api_key
+
+IMPORTANT: Do NOT add the Gemini API key to client-exposed env vars (eg. `NEXT_PUBLIC_` or `EXPO_PUBLIC_`).
+Set `GEMINI_API_KEY` only in your server environment (Vercel, Docker, etc.). If the key
+was accidentally committed or used in client builds, rotate/revoke it immediately.
 
 # Mode Demo (set ke "true" untuk testing tanpa Firebase)
 NEXT_PUBLIC_DEMO_MODE=true
@@ -164,6 +168,47 @@ Untuk mencoba aplikasi tanpa setup Firebase:
 
 ## API Integration
 
+### Mobile & Web API Configuration
+
+#### Web (Next.js)
+Web components use relative paths to call `/api/gemini-analyze`, so no configuration is needed when running on the same host.
+
+#### Mobile (React Native / Expo)
+Mobile apps need to know where to find the Next.js backend. The mobile app uses `mobile/config.ts` to manage this:
+
+**Configuration Priority** (checked in order):
+1. **Runtime override**: `(global as any).API_BASE_URL = "http://..."`
+2. **Environment variable**: `EXPO_PUBLIC_API_BASE_URL` in `.env` or `.env.local`
+3. **Default fallback**: `http://localhost:3000`
+
+**Setup for Development**
+
+Create or update `.env.local`:
+```
+EXPO_PUBLIC_API_BASE_URL=http://YOUR_MACHINE_IP:3000
+```
+
+Find your machine IP:
+- **Windows**: Open Command Prompt, run `ipconfig`, look for IPv4 address
+- **macOS/Linux**: Open Terminal, run `ifconfig` or `hostname -I`
+
+Example `.env.local`:
+```
+EXPO_PUBLIC_API_BASE_URL=http://192.168.1.100:3000
+```
+
+Or set at runtime in your mobile entry point:
+```typescript
+(global as any).API_BASE_URL = "http://192.168.1.100:3000"
+```
+
+**Setup for Production**
+
+Set `EXPO_PUBLIC_API_BASE_URL` to your deployed API domain:
+```
+EXPO_PUBLIC_API_BASE_URL=https://api.yourdomain.com
+```
+
 ### Gemini API Route
 
 Endpoint: `POST /api/gemini-analyze`
@@ -171,10 +216,15 @@ Endpoint: `POST /api/gemini-analyze`
 Request body:
 \`\`\`json
 {
-  "image": "base64_encoded_image",
+  "image": "base64_encoded_image_or_image_url",
   "prompt": "AI_prompt_string"
 }
 \`\`\`
+
+The endpoint accepts:
+- **image as base64**: Direct base64 or data URL
+- **image as URL**: Will be fetched and encoded server-side
+- **image empty**: Text-only analysis (for expanded suggestions from existing data)
 
 Response:
 \`\`\`json
@@ -188,6 +238,14 @@ Response:
   "detail_analisis": "Botol plastik PET..."
 }
 \`\`\`
+
+Or (when JSON extraction fails):
+\`\`\`json
+{
+  "__text": "Raw text response from Gemini..."
+}
+\`\`\`
+
 
 ## Design System
 

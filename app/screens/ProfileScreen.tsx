@@ -1,12 +1,84 @@
 "use client"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from "react-native"
 import { Card, Button, Avatar, ProgressBar } from "react-native-paper"
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"
-import { useAuth } from "../contexts/AuthContext"
+import * as ImagePicker from "expo-image-picker"
+import { useAuth } from "../../contexts/AuthContext"
 import { colors } from "../theme"
+import { useState, useEffect } from "react"
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth()
+  const { user, logout, updateUserData } = useAuth()
+  const [photoUri, setPhotoUri] = useState<string | null>(null)
+
+  useEffect(() => {
+    // Load photo URI jika ada yang tersimpan di user data
+    if (user?.photoURL) {
+      setPhotoUri(user.photoURL)
+    }
+  }, [user?.photoURL])
+
+  const pickImage = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      if (!permission.granted) {
+        Alert.alert("Permisi Diperlukan", "Aplikasi memerlukan akses ke galeri foto")
+        return
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      })
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const uri = result.assets[0].uri
+        setPhotoUri(uri)
+        // Update user data dengan foto baru
+        updateUserData({ photoURL: uri })
+        Alert.alert("Sukses", "Foto profil berhasil diubah!")
+      }
+    } catch (error) {
+      console.error("Error picking image:", error)
+      Alert.alert("Error", "Gagal memilih foto")
+    }
+  }
+
+  const takePicture = async () => {
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync()
+      if (!permission.granted) {
+        Alert.alert("Permisi Diperlukan", "Aplikasi memerlukan akses ke kamera")
+        return
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      })
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const uri = result.assets[0].uri
+        setPhotoUri(uri)
+        updateUserData({ photoURL: uri })
+        Alert.alert("Sukses", "Foto profil berhasil diubah!")
+      }
+    } catch (error) {
+      console.error("Error taking picture:", error)
+      Alert.alert("Error", "Gagal mengambil foto")
+    }
+  }
+
+  const handleChangePhoto = () => {
+    Alert.alert("Ubah Foto Profil", "Pilih sumber foto", [
+      { text: "Ambil Foto", onPress: takePicture },
+      { text: "Pilih dari Galeri", onPress: pickImage },
+      { text: "Batal", style: "cancel" },
+    ])
+  }
 
   const handleLogout = () => {
     Alert.alert("Keluar", "Apakah Anda yakin ingin keluar?", [
@@ -36,7 +108,16 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Avatar.Icon size={80} icon="account" style={styles.avatar} color={colors.surface} />
+        <TouchableOpacity onPress={handleChangePhoto} style={styles.avatarContainer}>
+          {photoUri ? (
+            <Image source={{ uri: photoUri }} style={styles.avatarImage} />
+          ) : (
+            <Avatar.Icon size={80} icon="account" style={styles.avatar} color={colors.surface} />
+          )}
+          <View style={styles.changePhotoButton}>
+            <Icon name="camera" size={16} color={colors.surface} />
+          </View>
+        </TouchableOpacity>
         <Text style={styles.name}>{user?.displayName}</Text>
         <Text style={styles.email}>{user?.email}</Text>
       </View>
@@ -151,9 +232,31 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     backgroundColor: colors.primary,
   },
+  avatarContainer: {
+    position: "relative",
+    marginBottom: 16,
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.primaryDark,
+  },
   avatar: {
     backgroundColor: colors.primaryDark,
-    marginBottom: 16,
+  },
+  changePhotoButton: {
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.info,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: colors.surface,
   },
   name: {
     fontSize: 24,

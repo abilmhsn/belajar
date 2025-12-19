@@ -2,7 +2,7 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from "react-native"
 import { Card, ProgressBar } from "react-native-paper"
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"
-import { useAuth } from "../contexts/AuthContext"
+import { useAuth } from "../../contexts/AuthContext"
 import { colors } from "../theme"
 
 const { width } = Dimensions.get("window")
@@ -240,12 +240,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     elevation: 3,
+    padding: 12,
   },
   actionLabel: {
     color: colors.surface,
     fontSize: 16,
     fontWeight: "bold",
     marginTop: 8,
+    textAlign: "center",
+    flex: 1,
+    width: "100%",
   },
   tipCard: {
     margin: 16,

@@ -3,26 +3,33 @@
 import { useState } from "react"
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from "react-native"
 import { TextInput, Button } from "react-native-paper"
-import { useAuth } from "../contexts/AuthContext"
+import { useAuth } from "../../contexts/AuthContext"
 import { colors } from "../theme"
 
-export default function LoginScreen({ navigation }: any) {
+export default function RegisterScreen({ navigation }: any) {
+  const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const { register } = useAuth()
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Mohon isi email dan password")
+  const handleRegister = async () => {
+    if (!name || !email || !password || !confirmPassword) {
+      Alert.alert("Error", "Mohon isi semua field")
+      return
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Password tidak cocok")
       return
     }
 
     setLoading(true)
     try {
-      await login(email, password)
+      await register(email, password, name)
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Login gagal")
+      Alert.alert("Error", error.message || "Registrasi gagal")
     } finally {
       setLoading(false)
     }
@@ -32,14 +39,21 @@ export default function LoginScreen({ navigation }: any) {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoIcon}>♻️</Text>
-          </View>
-          <Text style={styles.title}>SmartEcoApp</Text>
-          <Text style={styles.subtitle}>Scan, Sort, Save the Earth</Text>
+          <Text style={styles.title}>Buat Akun Baru</Text>
+          <Text style={styles.subtitle}>Bergabung untuk menyelamatkan bumi</Text>
         </View>
 
         <View style={styles.form}>
+          <TextInput
+            label="Nama Lengkap"
+            value={name}
+            onChangeText={setName}
+            mode="outlined"
+            style={styles.input}
+            outlineColor={colors.border}
+            activeOutlineColor={colors.primary}
+          />
+
           <TextInput
             label="Email"
             value={email}
@@ -63,29 +77,36 @@ export default function LoginScreen({ navigation }: any) {
             activeOutlineColor={colors.primary}
           />
 
+          <TextInput
+            label="Konfirmasi Password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            mode="outlined"
+            secureTextEntry
+            style={styles.input}
+            outlineColor={colors.border}
+            activeOutlineColor={colors.primary}
+          />
+
           <Button
             mode="contained"
-            onPress={handleLogin}
+            onPress={handleRegister}
             loading={loading}
             disabled={loading}
             style={styles.button}
             contentStyle={styles.buttonContent}
           >
-            Masuk
+            Daftar
           </Button>
 
           <Button
             mode="text"
-            onPress={() => navigation.navigate("Register")}
+            onPress={() => navigation.navigate("Login")}
             style={styles.linkButton}
             textColor={colors.primary}
           >
-            Belum punya akun? Daftar
+            Sudah punya akun? Masuk
           </Button>
-
-          <View style={styles.demoInfo}>
-            <Text style={styles.demoText}>Demo Mode: Gunakan email & password apapun</Text>
-          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -104,22 +125,10 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginBottom: 48,
-  },
-  logoContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  logoIcon: {
-    fontSize: 50,
+    marginBottom: 40,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "bold",
     color: colors.primary,
     marginBottom: 8,
@@ -144,18 +153,5 @@ const styles = StyleSheet.create({
   },
   linkButton: {
     marginTop: 16,
-  },
-  demoInfo: {
-    marginTop: 32,
-    padding: 16,
-    backgroundColor: "#fef3c7",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#fbbf24",
-  },
-  demoText: {
-    color: "#92400e",
-    textAlign: "center",
-    fontSize: 14,
   },
 })

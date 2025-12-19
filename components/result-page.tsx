@@ -9,13 +9,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Check, MapPin, Save, Sparkles } from "lucide-react"
-import { LeafIcon } from "@/components/icons"
+import { LeafIcon, BottleIcon, CanIcon, BoxIcon, PaperIcon } from "@/components/icons"
 import Link from "next/link"
 import type { GeminiResponse } from "@/lib/gemini"
+import { analyzeWasteImage } from "@/lib/gemini"
 import { useAuth } from "@/contexts/auth-context"
 import { collection, addDoc } from "firebase/firestore"
-import { ref, uploadString, getDownloadURL } from "firebase/storage"
-import { db, storage } from "@/lib/firebase"
+import { ref, uploadString, getDownloadURL, getStorage } from "firebase/storage"
+import { db } from "@/lib/firebase"
+import { initializeApp } from "firebase/app"
 import type { RiwayatScan, TransaksiPoin } from "@/lib/types"
 
 interface ScanResult {
@@ -43,15 +45,33 @@ export function ResultPage() {
   const [catatan, setCatatan] = useState("")
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [analysisLoading, setAnalysisLoading] = useState(false)
 
   useEffect(() => {
     const data = sessionStorage.getItem("scanResult")
     if (data) {
-      setResult(JSON.parse(data))
+      const parsed = JSON.parse(data)
+      setResult(parsed)
+      // If analysis looks empty or missing detail, call Gemini to generate analysis
+      if (!parsed.analysis || !parsed.analysis.detail_analisis || !parsed.analysis.saran_pengolahan) {
+        enrichAnalysis(parsed.image)
+      }
     } else {
       router.push("/scan")
     }
   }, [router])
+
+  async function enrichAnalysis(imageData: string) {
+    try {
+      setAnalysisLoading(true)
+      const ai = await analyzeWasteImage(imageData)
+      setResult((r) => ({ ...r!, analysis: ai }))
+    } catch (err) {
+      console.error("Gemini enrich failed:", err)
+    } finally {
+      setAnalysisLoading(false)
+    }
+  }
 
   const handleSave = async () => {
     if (!result || !user) return
@@ -66,6 +86,7 @@ export function ResultPage() {
 
     try {
       // Upload image to Firebase Storage
+      const storage = getStorage()
       const imageRef = ref(storage, `scans/${user.uid}/${Date.now()}.jpg`)
       await uploadString(imageRef, result.image, "data_url")
       const imageUrl = await getDownloadURL(imageRef)
@@ -98,6 +119,7 @@ export function ResultPage() {
         beratEstimasiKg: berat,
         statusPengolahan: "Belum",
         catatan: catatan,
+        expandedSuggestion: expandedSuggestion || null,
       }
 
       const scanDoc = await addDoc(collection(db, "riwayatScan"), scanData)
@@ -168,6 +190,50 @@ export function ResultPage() {
 
   const { image, analysis } = result
 
+  // Return an SVG icon component based on item name and category
+  const renderItemLogo = () => {
+    const name = (analysis?.nama_item || "").toLowerCase()
+    const cat = (analysis?.kategori_sampah || "").toLowerCase()
+
+    if (name.includes("botol") || name.includes("bottle") || name.includes("pet") || cat === "plastik") {
+      return <BottleIcon className="w-8 h-8 text-primary" />
+    }
+    if (name.includes("kaleng") || name.includes("can") || name.includes("aluminium") || cat === "logam") {
+      return <CanIcon className="w-8 h-8 text-primary" />
+    }
+    if (name.includes("kardus") || name.includes("karton") || name.includes("box") || cat === "kertas") {
+      return <BoxIcon className="w-8 h-8 text-primary" />
+    }
+    if (name.includes("kertas") || name.includes("paper") || name.includes("koran")) {
+      return <PaperIcon className="w-8 h-8 text-primary" />
+    }
+
+    // fallback
+    return <LeafIcon className="w-8 h-8 text-primary" />
+  }
+
+  const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null)
+  const [loadingSuggestion, setLoadingSuggestion] = useState(false)
+
+  const fetchExpandedSuggestion = async () => {
+    if (!image) return
+    setLoadingSuggestion(true)
+    try {
+      const customPrompt = `Anda adalah ahli pengolahan sampah. Berdasarkan analisis singkat berikut sebagai konteks:\n${JSON.stringify(
+        analysis,
+      )}\nBerikan langkah pengolahan yang terperinci, urutkan langkah menjadi 4-6 langkah actionable, serta tips keselamatan. Kembalikan hanya teks narasi.`
+      const ai = await analyzeWasteImage(image, customPrompt)
+      // Gemini response will be JSON; but for expanded suggestion we accept detail_analisis or saran_pengolahan
+      const expanded = ai.saran_pengolahan || ai.detail_analisis || (ai as any).__text || JSON.stringify(ai)
+      setExpandedSuggestion(expanded)
+    } catch (err) {
+      console.error("Expanded suggestion failed:", err)
+      setExpandedSuggestion("Gagal mengambil saran lanjutan")
+    } finally {
+      setLoadingSuggestion(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-secondary/20 to-background pb-8">
       {/* Header */}
@@ -219,8 +285,17 @@ export function ResultPage() {
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>
-                <CardTitle className="text-2xl mb-2">{analysis.nama_item}</CardTitle>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">{renderItemLogo()}</div>
+                  <CardTitle className="text-2xl mb-0">{analysis.nama_item}</CardTitle>
+                </div>
                 <CardDescription>Confidence: {analysis.confidence_score}%</CardDescription>
+                {analysisLoading && (
+                  <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <span>Analisis AI sedang berjalan...</span>
+                  </div>
+                )}
               </div>
               <Badge className={getCategoryColor(analysis.kategori_sampah)}>{analysis.kategori_sampah}</Badge>
             </div>
@@ -246,6 +321,16 @@ export function ResultPage() {
             <div className="pt-4 border-t">
               <h4 className="font-semibold mb-2">Saran Pengolahan</h4>
               <p className="text-sm text-muted-foreground">{analysis.saran_pengolahan}</p>
+              <div className="mt-3">
+                <Button variant="ghost" size="sm" onClick={fetchExpandedSuggestion} disabled={loadingSuggestion}>
+                  {loadingSuggestion ? "Memuat saran..." : "Lihat saran pengolahan"}
+                </Button>
+                {expandedSuggestion && (
+                  <div className="mt-3 bg-card/50 p-3 rounded">
+                    <p className="text-sm">{expandedSuggestion}</p>
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

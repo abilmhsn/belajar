@@ -41,6 +41,7 @@ export interface RiwayatScan {
   beratEstimasiKg: number
   statusPengolahan: "Belum" | "Sedang" | "Selesai"
   catatan?: string
+  expandedSuggestion?: string | null
 }
 
 export interface BankSampah {

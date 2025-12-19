@@ -1,7 +1,7 @@
 "use client"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
-import { useAuth } from "../contexts/AuthContext"
+import { useAuth } from "../../contexts/AuthContext"
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"
 
 // Auth Screens
@@ -64,11 +64,8 @@ function MainTabs() {
         options={{
           title: "Scan",
           tabBarIcon: ({ color, size }) => <Icon name="camera" size={size} color={color} />,
-          tabBarIconStyle: {
-            marginTop: -10,
-          },
           tabBarLabelStyle: {
-            marginTop: -5,
+            paddingBottom: 4,
           },
         }}
       />

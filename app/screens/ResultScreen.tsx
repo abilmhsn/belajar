@@ -4,7 +4,7 @@ import { useState } from "react"
 import { View, Text, StyleSheet, ScrollView, Alert } from "react-native"
 import { Card, Button, TextInput } from "react-native-paper"
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"
-import { useAuth } from "../contexts/AuthContext"
+import { useAuth } from "../../contexts/AuthContext"
 import { colors } from "../theme"
 
 export default function ResultScreen({ route, navigation }: any) {

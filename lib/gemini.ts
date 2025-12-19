@@ -1,57 +1,82 @@
-// Gemini AI Service for waste identification
+import { GoogleGenAI, Type } from "@google/genai"
 
-export interface GeminiResponse {
-  is_sampah: boolean
-  kategori_sampah: string
+export interface GeminiWasteResult {
   nama_item: string
+  kategori_sampah: "Plastik" | "Kertas" | "Organik" | "Logam" | "Kaca" | "Elektronik" | "B3" | "Residu"
   estimasi_harga_jual_rp_per_kg: number
   saran_pengolahan: string
   confidence_score: number
   detail_analisis: string
 }
 
-const GEMINI_PROMPT = `Anda adalah sistem AI ahli dalam identifikasi sampah dan manajemen limbah di Indonesia. Analisis gambar ini dan berikan respons HANYA dalam format JSON yang valid, tanpa teks tambahan apapun.
+const ai = new GoogleGenAI({
+  apiKey: process.env.EXPO_PUBLIC_GEMINI_API_KEY!,
+})
 
-Tugas Anda:
-1. Tentukan apakah objek dalam gambar adalah sampah (true/false)
-2. Klasifikasikan kategori sampah: Organik, Plastik, Kertas, Logam, B3, atau Residu
-3. Estimasi harga jual per kilogram dalam Rupiah (gunakan harga pasar Indonesia)
-4. Berikan satu saran pengolahan yang spesifik dan actionable
+export async function analyzeTrashImage(
+  base64Image: string
+): Promise<GeminiWasteResult> {
+  const systemInstruction = `
+Anda adalah ahli lingkungan profesional di Indonesia.
 
-Format respons wajib:
-{
-  "is_sampah": boolean,
-  "kategori_sampah": "Organik" | "Plastik" | "Kertas" | "Logam" | "B3" | "Residu",
-  "nama_item": "string (nama spesifik item)",
-  "estimasi_harga_jual_rp_per_kg": number,
-  "saran_pengolahan": "string (satu kalimat spesifik)",
-  "confidence_score": number (0-100),
-  "detail_analisis": "string (penjelasan singkat)"
-}
+TUGAS:
+- Identifikasi objek pada gambar
+- Tentukan apakah itu sampah
+- Klasifikasikan kategori sampah Indonesia
+- Estimasikan harga jual per kg dalam Rupiah
+- Berikan saran pengolahan
+- Berikan confidence score (0-100)
+- Jelaskan analisis singkat
 
-PENTING: Respons harus berupa JSON yang valid dan dapat di-parse. Jangan tambahkan teks diluar JSON.`
+RESPONS WAJIB JSON VALID.
+`
 
-export async function analyzeWasteImage(imageBase64: string): Promise<GeminiResponse> {
-  try {
-    const response = await fetch("/api/gemini-analyze", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+contents: [
+    {
+      parts: [
+        { text: "Analisis sampah pada gambar berikut:" },
+        {
+          inlineData: {
+            mimeType: "image/jpeg",
+            data: base64Image.includes(",")
+              ? base64Image.split(",")[1]
+              : base64Image,
+          },
+        },
+      ],
+    },
+  ],
+    config: {
+      systemInstruction,
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          nama_item: { type: Type.STRING },
+          kategori_sampah: { type: Type.STRING },
+          estimasi_harga_jual_rp_per_kg: { type: Type.NUMBER },
+          saran_pengolahan: { type: Type.STRING },
+          confidence_score: { type: Type.NUMBER },
+          detail_analisis: { type: Type.STRING },
+        },
+        required: [
+          "nama_item",
+          "kategori_sampah",
+          "estimasi_harga_jual_rp_per_kg",
+          "saran_pengolahan",
+          "confidence_score",
+          "detail_analisis",
+        ],
       },
-      body: JSON.stringify({
-        image: imageBase64,
-        prompt: GEMINI_PROMPT,
-      }),
-    })
+    },
+  })
 
-    if (!response.ok) {
-      throw new Error("Failed to analyze image")
-    }
-
-    const data = await response.json()
-    return data
-  } catch (error) {
-    console.error("Error analyzing image:", error)
-    throw error
+  if (!response.text) {
+    throw new Error("AI tidak memberikan respon")
   }
+
+  return JSON.parse(response.text) as GeminiWasteResult
 }
+

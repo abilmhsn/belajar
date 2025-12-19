@@ -3,57 +3,59 @@
 import { useState } from "react"
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from "react-native"
 import { TextInput, Button } from "react-native-paper"
-import { useAuth } from "../contexts/AuthContext"
+import { useAuth } from "../../contexts/AuthContext"
 import { colors } from "../theme"
 
-export default function RegisterScreen({ navigation }: any) {
-  const [name, setName] = useState("")
+export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
   const [loading, setLoading] = useState(false)
-  const { register } = useAuth()
+  const { login } = useAuth()
 
-  const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword) {
-      Alert.alert("Error", "Mohon isi semua field")
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Mohon isi email dan password")
       return
     }
+    // Trim inputs to avoid accidental spaces
+    const trimmedEmail = email.trim()
+    const trimmedPassword = password.trim()
 
-    if (password !== confirmPassword) {
-      Alert.alert("Error", "Password tidak cocok")
-      return
-    }
+    // Debug: log email and password length (do NOT log raw password)
+    console.log("Attempting login for:", trimmedEmail, "passwordLength=", trimmedPassword.length)
 
     setLoading(true)
     try {
-      await register(email, password, name)
+      await login(trimmedEmail, trimmedPassword)
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Registrasi gagal")
+      console.error("LoginScreen caught error:", error)
+      Alert.alert("Error", error.message || "Login gagal")
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleGoogleSignIn = async () => {
+    // Placeholder UI action. Implement OAuth/Expo Google Sign-In in production.
+    console.log("Google Sign-In pressed")
+    Alert.alert(
+      "Masuk dengan Google",
+      "Fitur Google Sign-In belum dikonfigurasi. Untuk mengaktifkannya, ikuti petunjuk di README dan siapkan OAuth di Google Cloud Console.",
+    )
   }
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Buat Akun Baru</Text>
-          <Text style={styles.subtitle}>Bergabung untuk menyelamatkan bumi</Text>
+          <View style={styles.logoContainer}>
+            <Text style={styles.logoIcon}>♻️</Text>
+          </View>
+          <Text style={styles.title}>SmartEcoApp</Text>
+          <Text style={styles.subtitle}>Scan, Sort, Save the Earth</Text>
         </View>
 
         <View style={styles.form}>
-          <TextInput
-            label="Nama Lengkap"
-            value={name}
-            onChangeText={setName}
-            mode="outlined"
-            style={styles.input}
-            outlineColor={colors.border}
-            activeOutlineColor={colors.primary}
-          />
-
           <TextInput
             label="Email"
             value={email}
@@ -77,35 +79,34 @@ export default function RegisterScreen({ navigation }: any) {
             activeOutlineColor={colors.primary}
           />
 
-          <TextInput
-            label="Konfirmasi Password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            mode="outlined"
-            secureTextEntry
-            style={styles.input}
-            outlineColor={colors.border}
-            activeOutlineColor={colors.primary}
-          />
-
           <Button
             mode="contained"
-            onPress={handleRegister}
+            onPress={handleLogin}
             loading={loading}
             disabled={loading}
             style={styles.button}
             contentStyle={styles.buttonContent}
           >
-            Daftar
+            Masuk
+          </Button>
+
+          <Button
+            mode="outlined"
+            onPress={handleGoogleSignIn}
+            style={[styles.button, styles.googleButton]}
+            contentStyle={styles.googleButtonContent}
+            icon="google"
+          >
+            Masuk dengan Google
           </Button>
 
           <Button
             mode="text"
-            onPress={() => navigation.navigate("Login")}
+            onPress={() => navigation.navigate("Register")}
             style={styles.linkButton}
             textColor={colors.primary}
           >
-            Sudah punya akun? Masuk
+            Belum punya akun? Daftar
           </Button>
         </View>
       </ScrollView>
@@ -125,10 +126,22 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginBottom: 40,
+    marginBottom: 48,
+  },
+  logoContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  logoIcon: {
+    fontSize: 50,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: "bold",
     color: colors.primary,
     marginBottom: 8,
@@ -153,5 +166,12 @@ const styles = StyleSheet.create({
   },
   linkButton: {
     marginTop: 16,
+  },
+  googleButton: {
+    marginTop: 12,
+    borderColor: colors.border,
+  },
+  googleButtonContent: {
+    paddingVertical: 8,
   },
 })
